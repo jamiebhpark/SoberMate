@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.642365921406-hgjjlbgbomr52ft0tmhm4ik9nh53hecm</string>
+			</array>
+		</dict>
+	</array>
+	<key>GIDClientID</key>
+	<string>642365921406-hgjjlbgbomr52ft0tmhm4ik9nh53hecm.apps.googleusercontent.com</string>
+    
+    <key>NSContactsUsageDescription</key>
+    <string>We need access to your contacts to import emergency contacts.</string>
+    
+    <key>NSMessageUsageDescription</key>
+    <string>We need access to send emergency messages.</string>
+
+    <key>NSPushNotificationsUsageDescription</key>
+    <string>We need your permission to send notifications.</string>
+
+    <key>NSContactsUsageDescription</key>
+    <string>We need access to your contacts to allow emergency messaging.</string>
+    
+    <key>NSContactsUsageDescription</key>
+    <string>We need access to your contacts to allow emergency messaging.</string>
+    
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>We need access to your photo library to allow emergency messaging.</string>
+    
+    <key>NSCameraUsageDescription</key>
+    <string>We need access to your camera to allow emergency messaging.</string>
+    
+    <key>NSMicrophoneUsageDescription</key>
+    <string>We need access to your microphone to allow emergency messaging.</string>
+
+</dict>
+</plist>
