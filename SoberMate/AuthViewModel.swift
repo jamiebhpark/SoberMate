@@ -1,11 +1,139 @@
 import SwiftUI
-import FirebaseAuth
 import FirebaseCore
 import GoogleSignIn
 import AuthenticationServices
+import Combine
+import FirebaseAuth
 
-class AuthViewModel: ObservableObject {
+class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
     @Published var isSignedIn: Bool = Auth.auth().currentUser != nil
+    private var authStateListenerHandle: AuthStateDidChangeListenerHandle?
+    internal var reauthenticationCompletion: ((Result<Void, Error>) -> Void)? // Add this property
+    private var cancellables = Set<AnyCancellable>()
+
+    override init() {
+        super.init()
+        addAuthStateListener()
+    }
+
+    deinit {
+        removeAuthStateListener()
+    }
+
+    private func addAuthStateListener() {
+        removeAuthStateListener()
+        authStateListenerHandle = Auth.auth().addStateDidChangeListener { auth, user in
+            DispatchQueue.main.async {
+                self.isSignedIn = user != nil
+                print("Auth state changed: \(self.isSignedIn)")
+            }
+        }
+    }
+
+    private func removeAuthStateListener() {
+        if let handle = authStateListenerHandle {
+            Auth.auth().removeStateDidChangeListener(handle)
+            authStateListenerHandle = nil
+        }
+    }
+
+    func signOut() -> AnyPublisher<Void, Error> {
+        Future { promise in
+            do {
+                try Auth.auth().signOut()
+                DispatchQueue.main.async {
+                    self.isSignedIn = false
+                    print("Successfully signed out")
+                    promise(.success(()))
+                }
+            } catch let error as NSError {
+                DispatchQueue.main.async {
+                    print("Sign out error: \(error.localizedDescription)")
+                    promise(.failure(error))
+                }
+            }
+        }
+        .eraseToAnyPublisher()
+    }
+
+    func resetData() -> AnyPublisher<Void, Error> {
+        Future { promise in
+            FirebaseManager.shared.resetUserData { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success:
+                        print("Successfully reset user data")
+                        promise(.success(()))
+                    case .failure(let error):
+                        print("Reset data error: \(error.localizedDescription)")
+                        promise(.failure(error))
+                    }
+                }
+            }
+        }
+        .eraseToAnyPublisher()
+    }
+
+    func deleteUserAccount() -> AnyPublisher<Void, Error> {
+        guard let user = Auth.auth().currentUser else {
+            return Fail(error: NSError(domain: "No user found", code: 0, userInfo: nil)).eraseToAnyPublisher()
+        }
+
+        return reauthenticate()
+            .flatMap { [unowned self] in self.resetData() }
+            .flatMap { _ in
+                Future<Void, Error> { promise in
+                    user.delete { error in
+                        if let error = error {
+                            print("Delete account error: \(error.localizedDescription)")
+                            promise(.failure(error))
+                        } else {
+                            DispatchQueue.main.async {
+                                self.isSignedIn = false
+                                print("Successfully deleted account")
+                                promise(.success(()))
+                            }
+                        }
+                    }
+                }
+            }
+            .eraseToAnyPublisher()
+    }
+
+    private func reauthenticate() -> AnyPublisher<Void, Error> {
+        Future { promise in
+            guard let user = Auth.auth().currentUser else {
+                promise(.failure(NSError(domain: "No user found", code: 0, userInfo: nil)))
+                return
+            }
+
+            if let providerData = user.providerData.first {
+                let providerID = providerData.providerID
+                print("Reauthenticate with provider: \(providerID)")
+
+                switch providerID {
+                case "apple.com":
+                    AppleAuthHandler.startSignInWithAppleFlow(viewModel: self) { result in
+                        promise(result)
+                    }
+                case "google.com":
+                    GoogleAuthHandler.reauthenticateWithGoogle { result in
+                        promise(result)
+                    }
+                case "password":
+                    EmailAuthHandler.reauthenticateWithPassword { result in
+                        promise(result)
+                    }
+                default:
+                    promise(.failure(NSError(domain: "Unknown provider ID", code: 0, userInfo: nil)))
+                }
+            } else {
+                promise(.failure(NSError(domain: "No provider data found", code: 0, userInfo: nil)))
+            }
+        }
+        .eraseToAnyPublisher()
+    }
+
 
     func handleAuthorization(_ authResults: ASAuthorization) {
         if let appleIDCredential = authResults.credential as? ASAuthorizationAppleIDCredential {
@@ -75,26 +203,18 @@ class AuthViewModel: ObservableObject {
         }
     }
 
-    func logOut(completion: @escaping (Result<Void, Error>) -> Void) {
-        print("LogOut function called")
-        do {
-            try Auth.auth().signOut()
-            DispatchQueue.main.async {
-                self.isSignedIn = false
-                print("Successfully signed out")
-                completion(.success(()))
-            }
-        } catch let error as NSError {
-            DispatchQueue.main.async {
-                print("Sign out error: \(error.localizedDescription)")
-                completion(.failure(error))
-            }
-        }
+    @objc func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
+        AppleAuthHandler.authorizationController(viewModel: self, controller: controller, didCompleteWithAuthorization: authorization)
     }
 
-    func resetData(completion: @escaping (Result<Void, Error>) -> Void) {
-        FirebaseManager.shared.resetUserData { result in
-            completion(result)
+    @objc func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
+        AppleAuthHandler.authorizationController(viewModel: self, controller: controller, didCompleteWithError: error)
+    }
+
+    @objc func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene else {
+            fatalError("No window scene found")
         }
+        return windowScene.windows.first { $0.isKeyWindow }!
     }
 }

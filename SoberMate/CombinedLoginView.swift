@@ -15,14 +15,14 @@ struct CombinedLoginView: View {
             } else {
                 VStack(spacing: 20) {
                     Spacer()
-                    
+
                     Text("SoberMate")
                         .font(.system(size: 36, weight: .bold))
                         .foregroundColor(.primary)
                         .padding(.top, 60)
-                    
+
                     Spacer()
-                    
+
                     SignInWithAppleButton(.signIn, onRequest: { request in
                         request.requestedScopes = [.fullName, .email]
                     }, onCompletion: { result in
@@ -37,7 +37,7 @@ struct CombinedLoginView: View {
                     .frame(height: 50)
                     .cornerRadius(10)
                     .padding(.horizontal, 40)
-                    
+
                     Button(action: {
                         authViewModel.signInWithGoogle()
                     }) {

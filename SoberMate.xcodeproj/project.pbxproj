@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7D3B117A2C3FE25C00FA17CD /* AppleAuthHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3B11792C3FE25C00FA17CD /* AppleAuthHandler.swift */; };
+		7D3B117C2C3FE26700FA17CD /* GoogleAuthHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3B117B2C3FE26700FA17CD /* GoogleAuthHandler.swift */; };
+		7D3B117E2C3FE27000FA17CD /* EmailAuthHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3B117D2C3FE27000FA17CD /* EmailAuthHandler.swift */; };
 		7D4497C42C3C323C000C9C75 /* EmailLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4497C32C3C323C000C9C75 /* EmailLoginView.swift */; };
 		7D4497C82C3C4BDB000C9C75 /* AchievementRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4497C72C3C4BDB000C9C75 /* AchievementRow.swift */; };
 		7D4497CA2C3C4CCC000C9C75 /* AchievementsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4497C92C3C4CCC000C9C75 /* AchievementsManager.swift */; };
@@ -67,6 +70,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		7D3B11792C3FE25C00FA17CD /* AppleAuthHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleAuthHandler.swift; sourceTree = "<group>"; };
+		7D3B117B2C3FE26700FA17CD /* GoogleAuthHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleAuthHandler.swift; sourceTree = "<group>"; };
+		7D3B117D2C3FE27000FA17CD /* EmailAuthHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailAuthHandler.swift; sourceTree = "<group>"; };
 		7D4497C32C3C323C000C9C75 /* EmailLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailLoginView.swift; sourceTree = "<group>"; };
 		7D4497C72C3C4BDB000C9C75 /* AchievementRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementRow.swift; sourceTree = "<group>"; };
 		7D4497C92C3C4CCC000C9C75 /* AchievementsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementsManager.swift; sourceTree = "<group>"; };
@@ -155,6 +161,9 @@
 				7DDC94B52C3B780900B6FDC8 /* ContentView.swift */,
 				7DDC94CD2C3B870000B6FDC8 /* CombinedLoginView.swift */,
 				7D8775B42C3D34E30013A265 /* AuthViewModel.swift */,
+				7D3B11792C3FE25C00FA17CD /* AppleAuthHandler.swift */,
+				7D3B117B2C3FE26700FA17CD /* GoogleAuthHandler.swift */,
+				7D3B117D2C3FE27000FA17CD /* EmailAuthHandler.swift */,
 				7D4497C32C3C323C000C9C75 /* EmailLoginView.swift */,
 				7DDC94D32C3B911E00B6FDC8 /* Models.swift */,
 				7DDC94D52C3B923A00B6FDC8 /* GoalView.swift */,
@@ -283,6 +292,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				7D4497C82C3C4BDB000C9C75 /* AchievementRow.swift in Sources */,
+				7D3B117C2C3FE26700FA17CD /* GoogleAuthHandler.swift in Sources */,
 				7D4497CA2C3C4CCC000C9C75 /* AchievementsManager.swift in Sources */,
 				7DDC94E02C3B92F700B6FDC8 /* EmergencyView.swift in Sources */,
 				7D4497D02C3C56EC000C9C75 /* PostDetailView.swift in Sources */,
@@ -294,6 +304,7 @@
 				7DDC94D62C3B923A00B6FDC8 /* GoalView.swift in Sources */,
 				7DD5930C2C3BFABA00726989 /* StatsViewModel.swift in Sources */,
 				7DDC94DE2C3B92E400B6FDC8 /* AchievementsView.swift in Sources */,
+				7D3B117E2C3FE27000FA17CD /* EmailAuthHandler.swift in Sources */,
 				7DD5930A2C3BF59D00726989 /* EditDiaryView.swift in Sources */,
 				7DDC94D22C3B910500B6FDC8 /* FirebaseManager.swift in Sources */,
 				7DDC94D82C3B927400B6FDC8 /* RecordView.swift in Sources */,
@@ -313,6 +324,7 @@
 				7DDC94E62C3B937600B6FDC8 /* UserSettingsView.swift in Sources */,
 				7D4497C42C3C323C000C9C75 /* EmailLoginView.swift in Sources */,
 				7D8775C92C3DBD0C0013A265 /* CoreDataStack.swift in Sources */,
+				7D3B117A2C3FE25C00FA17CD /* AppleAuthHandler.swift in Sources */,
 				7D8775B52C3D34E30013A265 /* AuthViewModel.swift in Sources */,
 				7DD5930E2C3C13D900726989 /* ContactListView.swift in Sources */,
 				7DD593082C3BF58900726989 /* DiaryListView.swift in Sources */,

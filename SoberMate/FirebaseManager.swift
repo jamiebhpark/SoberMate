@@ -4,6 +4,7 @@ import FirebaseCore
 import FirebaseFirestore
 import FirebaseAuth
 import UserNotifications
+import Combine
 
 class FirebaseManager: ObservableObject {
     static let shared = FirebaseManager()
@@ -48,16 +49,6 @@ class FirebaseManager: ObservableObject {
                 return
             }
             completion(.success(()))
-        }
-    }
-    
-    // 로그아웃
-    func signOut(completion: @escaping (Result<Void, Error>) -> Void) {
-        do {
-            try Auth.auth().signOut()
-            completion(.success(()))
-        } catch let signOutError as NSError {
-            completion(.failure(signOutError))
         }
     }
     
@@ -454,7 +445,7 @@ class FirebaseManager: ObservableObject {
             completion(.failure(error))
         }
     }
-    
+
     func fetchComments(postId: String, completion: @escaping (Result<[Comment], Error>) -> Void) {
         db.collection("posts").document(postId).collection("comments").order(by: "createdAt", descending: true).getDocuments { snapshot, error in
             if let error = error {
@@ -471,7 +462,7 @@ class FirebaseManager: ObservableObject {
             }
         }
     }
-    
+
     func updateComment(postId: String, comment: Comment, completion: @escaping (Result<Void, Error>) -> Void) {
         guard let documentId = comment.id else {
             completion(.failure(NSError(domain: "Invalid Comment ID", code: 0, userInfo: nil)))
@@ -494,7 +485,7 @@ class FirebaseManager: ObservableObject {
             completion(.failure(error))
         }
     }
-    
+
     func deleteComment(postId: String, comment: Comment, completion: @escaping (Result<Void, Error>) -> Void) {
         guard let documentId = comment.id else {
             completion(.failure(NSError(domain: "Invalid Comment ID", code: 0, userInfo: nil)))
@@ -766,12 +757,24 @@ class FirebaseManager: ObservableObject {
         }
     }
     // MARK: - Reset Logic
+// 로그아웃
+func signOut(completion: @escaping (Result<Void, Error>) -> Void) {
+    do {
+        try Auth.auth().signOut()
+        completion(.success(()))
+    } catch let signOutError as NSError {
+        completion(.failure(signOutError))
+    }
+}
+    
+    // MARK: - Reset Logic
     func resetUserData(completion: @escaping (Result<Void, Error>) -> Void) {
-        /*guard let userId = Auth.auth().currentUser?.uid else {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            print("No user ID found")
             completion(.failure(NSError(domain: "No user ID found", code: 0, userInfo: nil)))
             return
         }
-        
+
         let collections = [
             "goals",
             "drinkRecords",
@@ -782,73 +785,168 @@ class FirebaseManager: ObservableObject {
             "feelingStats",
             "posts"
         ]
-        
+
         let userDocument = db.collection("users").document(userId)
         let topLevelCollections = ["drinkRecords", "feelingStats", "diaryEntries", "posts"]
-        
+
         let group = DispatchGroup()
         var firstError: Error?
-        
+
+        // Delete user-specific subcollections
         for collection in collections {
             group.enter()
             userDocument.collection(collection).getDocuments { snapshot, error in
                 if let error = error {
+                    print("Error getting documents for collection \(collection): \(error.localizedDescription)")
                     firstError = error
                     group.leave()
                     return
                 }
-                
+
                 guard let documents = snapshot?.documents else {
+                    print("No documents found for collection \(collection)")
                     group.leave()
                     return
                 }
-                
+
                 let batch = self.db.batch()
                 for document in documents {
                     batch.deleteDocument(document.reference)
                 }
                 batch.commit { batchError in
                     if let batchError = batchError {
+                        print("Error committing batch delete for collection \(collection): \(batchError.localizedDescription)")
                         firstError = batchError
                     }
                     group.leave()
                 }
             }
         }
-        
+
+        // Delete top-level collections where userId is a field
         for collection in topLevelCollections {
             group.enter()
             db.collection(collection).whereField("userId", isEqualTo: userId).getDocuments { snapshot, error in
                 if let error = error {
+                    print("Error getting top-level documents for collection \(collection): \(error.localizedDescription)")
                     firstError = error
                     group.leave()
                     return
                 }
-                
+
                 guard let documents = snapshot?.documents else {
+                    print("No top-level documents found for collection \(collection)")
                     group.leave()
                     return
                 }
-                
+
                 let batch = self.db.batch()
                 for document in documents {
+                    // Delete comments subcollection if exists
+                    if collection == "posts" {
+                        self.deleteSubcollection(postId: document.documentID, subcollection: "comments", group: group)
+                    }
                     batch.deleteDocument(document.reference)
                 }
                 batch.commit { batchError in
                     if let batchError = batchError {
+                        print("Error committing batch delete for top-level collection \(collection): \(batchError.localizedDescription)")
                         firstError = batchError
                     }
                     group.leave()
                 }
             }
         }
-        
+
+        // Delete user document itself
+        group.enter()
+        db.collection("users").document(userId).delete { error in
+            if let error = error {
+                print("Error deleting user document: \(error.localizedDescription)")
+                firstError = error
+            }
+            group.leave()
+        }
+
         group.notify(queue: .main) {
             if let error = firstError {
+                print("Reset user data failed: \(error.localizedDescription)")
                 completion(.failure(error))
             } else {
+                print("All user data successfully reset")
                 completion(.success(()))
             }
-        }*/
+        }
+    }
+
+    // Helper function to delete subcollections
+    private func deleteSubcollection(postId: String, subcollection: String, group: DispatchGroup) {
+        group.enter()
+        db.collection("posts").document(postId).collection(subcollection).getDocuments { snapshot, error in
+            if let error = error {
+                print("Error getting documents for subcollection \(subcollection): \(error.localizedDescription)")
+                group.leave()
+                return
+            }
+
+            guard let documents = snapshot?.documents else {
+                print("No documents found for subcollection \(subcollection)")
+                group.leave()
+                return
+            }
+
+            let batch = self.db.batch()
+            for document in documents {
+                batch.deleteDocument(document.reference)
+            }
+            batch.commit { batchError in
+                if let batchError = batchError {
+                    print("Error committing batch delete for subcollection \(subcollection): \(batchError.localizedDescription)")
+                }
+                group.leave()
+            }
+        }
+    }
+
+    // MARK : Nickname Logic
+    func setNickname(nickname: String) -> AnyPublisher<Void, Error> {
+        guard let user = Auth.auth().currentUser else {
+            return Fail(error: NSError(domain: "No user signed in", code: 0, userInfo: nil))
+                .eraseToAnyPublisher()
+        }
+
+        return Future<Void, Error> { promise in
+            self.db.collection("users").document(user.uid).setData(["nickname": nickname], merge: true) { error in
+                if let error = error {
+                    promise(.failure(error))
+                } else {
+                    let changeRequest = user.createProfileChangeRequest()
+                    changeRequest.displayName = nickname
+                    changeRequest.commitChanges { error in
+                        if let error = error {
+                            promise(.failure(error))
+                        } else {
+                            promise(.success(()))
+                        }
+                    }
+                }
+            }
+        }
+        .eraseToAnyPublisher()
+    }
+
+    func getNickname(userId: String) -> AnyPublisher<String, Error> {
+        return Future<String, Error> { promise in
+            self.db.collection("users").document(userId).getDocument { document, error in
+                if let document = document, document.exists {
+                    let data = document.data()
+                    let nickname = data?["nickname"] as? String ?? "Anonymous"
+                    promise(.success(nickname))
+                } else {
+                    promise(.failure(error ?? NSError(domain: "Document does not exist", code: 0, userInfo: nil)))
+                }
+            }
+        }
+        .eraseToAnyPublisher()
     }
 }

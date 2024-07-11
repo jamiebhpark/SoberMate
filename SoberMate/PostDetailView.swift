@@ -1,10 +1,12 @@
 import SwiftUI
 import FirebaseAuth
+import Combine
 
 struct PostDetailView: View {
     var post: Post
     @State private var commentContent: String = ""
     @State private var comments: [Comment] = []
+    @State private var cancellables = Set<AnyCancellable>()
 
     var body: some View {
         VStack {
@@ -73,24 +75,35 @@ struct PostDetailView: View {
     }
 
     private func sendComment() {
-        guard let userId = Auth.auth().currentUser?.uid, let postId = post.id else { return }
-        
-        let newComment = Comment(
-            content: commentContent,
-            sender: Auth.auth().currentUser?.displayName ?? "Anonymous",
-            createdAt: Date(),
-            userId: userId
-        )
+        guard let user = Auth.auth().currentUser, let postId = post.id else { return }
 
-        FirebaseManager.shared.saveComment(postId: postId, comment: newComment) { result in
-            switch result {
-            case .success:
-                fetchComments()
-                commentContent = ""
-            case .failure(let error):
-                print("Failed to save comment: \(error)")
-            }
-        }
+        FirebaseManager.shared.getNickname(userId: user.uid)
+            .sink(receiveCompletion: { completion in
+                switch completion {
+                case .finished:
+                    break
+                case .failure(let error):
+                    print("Failed to get nickname: \(error.localizedDescription)")
+                }
+            }, receiveValue: { nickname in
+                let newComment = Comment(
+                    content: self.commentContent,
+                    sender: nickname,
+                    createdAt: Date(),
+                    userId: user.uid
+                )
+
+                FirebaseManager.shared.saveComment(postId: postId, comment: newComment) { result in
+                    switch result {
+                    case .success:
+                        self.fetchComments()
+                        self.commentContent = ""
+                    case .failure(let error):
+                        print("Failed to save comment: \(error.localizedDescription)")
+                    }
+                }
+            })
+            .store(in: &cancellables)
     }
 
     private func fetchComments() {

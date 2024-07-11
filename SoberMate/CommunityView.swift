@@ -1,11 +1,14 @@
 import SwiftUI
 import FirebaseAuth
+import Combine
 
 struct CommunityView: View {
     @State private var posts: [Post] = []
     @State private var newPostContent: String = ""
     @State private var showAlert = false
     @State private var alertMessage = ""
+    @State private var cancellables = Set<AnyCancellable>()
+
 
     var body: some View {
         NavigationView {
@@ -72,29 +75,41 @@ struct CommunityView: View {
     }
 
     private func savePost() {
-        guard let userId = Auth.auth().currentUser?.uid else {
+        guard let user = Auth.auth().currentUser else {
             alertMessage = "User not authenticated."
             showAlert = true
             return
         }
 
-        let newPost = Post(
-            content: newPostContent,
-            sender: userId,
-            createdAt: Date(),
-            userId: userId  // Include the userId here
-        )
+        FirebaseManager.shared.getNickname(userId: user.uid)
+            .sink(receiveCompletion: { completion in
+                switch completion {
+                case .finished:
+                    break
+                case .failure(let error):
+                    alertMessage = "Failed to get nickname: \(error.localizedDescription)"
+                    showAlert = true
+                }
+            }, receiveValue: { nickname in
+                let newPost = Post(
+                    content: self.newPostContent,
+                    sender: nickname, // 닉네임 사용
+                    createdAt: Date(),
+                    userId: user.uid
+                )
 
-        FirebaseManager.shared.savePost(post: newPost) { result in
-            switch result {
-            case .success:
-                fetchPosts()
-                newPostContent = ""
-            case .failure(let error):
-                alertMessage = "Failed to save post: \(error.localizedDescription)"
-                showAlert = true
-            }
-        }
+                FirebaseManager.shared.savePost(post: newPost) { result in
+                    switch result {
+                    case .success:
+                        fetchPosts()
+                        newPostContent = ""
+                    case .failure(let error):
+                        alertMessage = "Failed to save post: \(error.localizedDescription)"
+                        showAlert = true
+                    }
+                }
+            })
+            .store(in: &cancellables)
     }
 
     private func fetchPosts() {

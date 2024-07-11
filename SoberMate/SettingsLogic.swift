@@ -1,7 +1,6 @@
 import SwiftUI
 import FirebaseAuth
-import CoreData
-import FirebaseFirestore
+import Combine
 
 struct SettingsLogic {
     static func toggleDarkMode() {
@@ -20,5 +19,9 @@ struct SettingsLogic {
         let url = URL(string: "https://example.com")!
         let activityController = UIActivityViewController(activityItems: [url], applicationActivities: nil)
         window.rootViewController?.present(activityController, animated: true, completion: nil)
+    }
+
+    static func setNickname(nickname: String) -> AnyPublisher<Void, Error> {
+        return FirebaseManager.shared.setNickname(nickname: nickname)
     }
 }
